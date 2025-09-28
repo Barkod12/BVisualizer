@@ -4,6 +4,14 @@ import numpy as np
 import threading
 import time
 
+#mmmmmm                        mm                        mm    mmm      mmmmm   
+ ##""""##                      ##                        ##   #"##     #""""##m 
+ ##    ##   m#####m   ##m####  ## m##"    m####m    m###m##     ##           ## 
+ #######    " mmm##   ##"      ##m##     ##"  "##  ##"  "##     ##         m#"  
+ ##    ##  m##"""##   ##       ##"##m    ##    ##  ##    ##     ##       m#"    
+ ##mmmm##  ##mmm###   ##       ##  "#m   "##mm##"  "##mm###  mmm##mmm  m##mmmmm 
+#"""""""    """" ""   ""       ""   """    """"      """ ""  """"""""  """""""" 
+                                                                                
 class AudioVisualizer:
     def __init__(self):
         self.window = tk.Tk()
@@ -13,6 +21,12 @@ class AudioVisualizer:
         # Create canvas for visualization
         self.canvas = tk.Canvas(self.window, bg='black')
         self.canvas.pack(fill=tk.BOTH, expand=True)
+        
+        # Add sensitivity control
+        self.sensitivity = 0.02  # Initial sensitivity value
+        self.window.bind('<MouseWheel>', self.on_scroll)  # Windows
+        self.window.bind('<Button-4>', self.on_scroll)    # Linux up
+        self.window.bind('<Button-5>', self.on_scroll)    # Linux down
         
         # Create bars
         self.bars = []
@@ -24,6 +38,11 @@ class AudioVisualizer:
         
         # Bind resize event
         self.window.bind('<Configure>', self.on_resize)
+        
+        # Bind F11 for fullscreen toggle
+        self.fullscreen = False
+        self.window.bind('<F11>', self.toggle_fullscreen)
+        self.window.bind('<Escape>', self.end_fullscreen)
         
         # Audio capture settings
         self.running = True
@@ -80,13 +99,28 @@ class AudioVisualizer:
             
             # Update bars with real audio data
             for i, bar in enumerate(self.bars):
-                # Scale height based on window size
-                bar_height = int(self.audio_data[i] * height * 0.02)  # 2% of window height per unit
+                # Scale height based on window size and sensitivity
+                bar_height = int(self.audio_data[i] * height * self.sensitivity)
                 x1, y1, x2, y2 = self.canvas.coords(bar)
                 self.canvas.coords(bar, x1, height, x2, height - bar_height)
             
             self.window.after(50, self.update)
     
+    def toggle_fullscreen(self, event=None):
+        self.fullscreen = not self.fullscreen
+        self.window.attributes('-fullscreen', self.fullscreen)
+    
+    def end_fullscreen(self, event=None):
+        self.fullscreen = False
+        self.window.attributes('-fullscreen', False)
+
+    def on_scroll(self, event):
+        # Windows mouse wheel
+        if event.num == 5 or event.delta < 0:
+            self.sensitivity = max(0.001, self.sensitivity - 0.001)  # Decrease sensitivity
+        else:  # event.num == 4 or event.delta > 0
+            self.sensitivity = min(0.1, self.sensitivity + 0.001)   # Increase sensitivity
+
     def on_closing(self):
         self.running = False
         time.sleep(0.1)  # Give audio thread time to close
